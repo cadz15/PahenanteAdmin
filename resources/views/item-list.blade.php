@@ -7,14 +7,18 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <a href="{{ route('supplier.create') }}" class="py-2 px-4 inline-block bg-green-500 text-white hover:bg-green-800 rounded-sm mb-6">Add Supplier</a>
+            <a href="#" class="py-2 px-4 inline-block bg-green-500 text-white hover:bg-green-800 rounded-sm mb-6">
+                Add Item
+            </a>
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <table id="supplier" class="table table-bordered">
+                    <table id="item" class="table table-bordered">
                         <thead>
                             <tr>
-                                <th>Supplier</th>
-                                <th>No. Items</th>
+                                <th>Image</th>
+                                <th>Item Name</th>
+                                <th>Description</th>
+                                <th>Price</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -40,16 +44,18 @@
                 }
             });
 
-            var table = $('#supplier').DataTable({
+            var table = $('#item').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
                     type: "post",
-                    url: "{{ route('supplier.list') }}",
+                    url: "{{ route('items.list', $supplier->id) }}",
                 },
                 columns: [
-                    {data: 'supplier', name: 'supplier'},
-                    {data: 'id', name: 'id'},
+                    {data: 'image', name: 'image'},
+                    {data: 'name', name: 'name'},
+                    {data: 'description', name: 'description'},
+                    {data: 'price', name: 'price'},
                     {data: 'action', name: 'action'},
                 ]
             });

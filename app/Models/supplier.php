@@ -13,6 +13,6 @@ class Supplier extends Model
 
     public function items()
     {
-        return $this->hasMany(Item::class, 'id', 'supplier_id');
+        return $this->hasMany(Item::class, 'supplier_id', 'id');
     }
 }
