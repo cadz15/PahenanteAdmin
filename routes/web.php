@@ -21,7 +21,7 @@ Route::get('/', function () {
 
 Route::get('/images/{filename}', [PahenanteController::class, 'getFile'])->name('get-file');
 
-Route::post('/mobile-update', [PahenanteController::class, 'mobileUpdate']);
+Route::get('/mobile-update/{mobileId}', [PahenanteController::class, 'mobileUpdate']);
 
 Route::middleware('auth')->group(function () {
     Route::post('/supplier-create', [PahenanteController::class, 'storeSupplier'])->name('supplier.store');

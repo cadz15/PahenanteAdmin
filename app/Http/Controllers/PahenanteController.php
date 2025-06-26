@@ -288,9 +288,9 @@ class PahenanteController extends Controller
     }
 
 
-    public function mobileUpdate(Request $request)
+    public function mobileUpdate($mobileId)
     {
-        if(!$request->has('mobileId') || $request->get('mobileId') != 'ph62525') return response()->json([
+        if($mobileId != 'ph62525') return response()->json([
             'message' => 'Error!'
         ], 404);
 
