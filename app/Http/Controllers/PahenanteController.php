@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Item;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Yajra\DataTables\DataTables;
 
@@ -39,16 +40,45 @@ class PahenanteController extends Controller
 
                     $actionBtn = '
                         <a href="' . $viewUrl . '" class="text-blue-600"  title="view"><i class="fa-solid fa-eye"></i></a>
-                        <a href="' . $editUrl . '" class="text-orange-600" ti title="edit"><i class="fa-solid  fa-pen-to-square"></i></a>
-                        <form action="' . $deleteUrl . '" method="POST" style="display:inline-block;" onsubmit="return confirm(\'Are you sure?\')">
-                            ' . csrf_field() . method_field('DELETE') . '
-                            <button type="submit" class="text-red-600" title="delete"><i class="fa-solid fa-trash-can"></i></button>
-                        </form>
+                        <a href="' . $editUrl . '" class="text-orange-600" title="edit"><i class="fa-solid  fa-pen-to-square"></i></a>
+                        
+                        <button type="submit" class="text-red-600 delete-item" data-item='. $row->id .' title="delete"><i class="fa-solid fa-trash-can"></i></button>
+                        
                     ';
                     return $actionBtn;
                 })
                 ->rawColumns(['action', 'image'])
                 ->make(true);
+    }
+
+    public function storeSupplier(Request $request)
+    {
+        $validated = $request->validate([
+            'supplier' => [
+            'required'
+        ],
+            'image' => ['sometimes', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
+        ]);
+
+        $supplier = Supplier::create([
+            'supplier' => $request->input('supplier'),
+            'image' => ''
+        ]);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Store image in 'public/images' directory and get the path
+            $image = $request->file('image');
+            $imageName = 'supplier-'. $supplier->id . '.'. $image->getClientOriginalExtension();
+            
+            $imagePath = $image->storeAs('uploads', $imageName, 'public');
+            
+            $supplier->update([
+                'image' => $imageName ?? $supplier->image,
+            ]);
+        }
+
+        return redirect(route('dashboard'));
     }
 
     public function updateSupplier(Request $request, $id)
@@ -58,7 +88,7 @@ class PahenanteController extends Controller
             'required', 
             Rule::unique('suppliers', 'supplier')->ignore($id)
         ],
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
+            'image' => ['sometimes', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
         ]);
 
         // Handle image upload
@@ -71,10 +101,13 @@ class PahenanteController extends Controller
         }
 
         // Create the supplier record (assuming you have a Supplier model)
-       $supplier = Supplier::where('id', $id)->first()
-       ?->update([
+       $supplier = Supplier::where('id', $id)->first();
+       
+       if(empty($supplier)) abort(404);
+
+       $supplier->update([
             'supplier' => $request->input('supplier'),
-            'image' => $imageName ?? null,
+            'image' => $imageName ?? $supplier->image,
         ]);
 
         return redirect(route('dashboard'));
@@ -85,9 +118,15 @@ class PahenanteController extends Controller
     {
         $supplier = Supplier::findOrFail($id);
 
+        $ids = Item::where('supplier_id', $id)->pluck('id')->toArray();
+
+        Item::destroy($ids);
+
         $supplier->delete();
 
-        return redirect(route('dashboard'));
+        return response()->json([
+            'message' => 'success',
+        ], 200);
     }
 
 
@@ -116,7 +155,7 @@ class PahenanteController extends Controller
     public function items($id)
     {
 
-        $data = Item::where('id', $id)->latest()->get();
+        $data = Item::where('supplier_id', $id)->latest()->get();
         
         return DataTables::of($data)
             ->addIndexColumn()
@@ -126,21 +165,144 @@ class PahenanteController extends Controller
                 return '<img src="' . $imageUrl . '" alt="Image" width="50" height="50" />';
             })
             ->addColumn('action', function($row){
-                $viewUrl = route('item.list', $row->id);
-                $editUrl = route('supplier.edit', $row->id);
-                $deleteUrl = route('supplier.destroy', $row->id); // typically used via AJAX or form method spoofing
+                $editUrl = route('items.edit', $row->id);
+                $deleteUrl = route('items.destroy', $row->id); // typically used via AJAX or form method spoofing
 
                 $actionBtn = '
-                    <a href="' . $viewUrl . '" class="text-blue-600"  title="view"><i class="fa-solid fa-eye"></i></a>
                     <a href="' . $editUrl . '" class="text-orange-600" ti title="edit"><i class="fa-solid  fa-pen-to-square"></i></a>
-                    <form action="' . $deleteUrl . '" method="POST" style="display:inline-block;" onsubmit="return confirm(\'Are you sure?\')">
-                        ' . csrf_field() . method_field('DELETE') . '
-                        <button type="submit" class="text-red-600" title="delete"><i class="fa-solid fa-trash-can"></i></button>
-                    </form>
+                    
+                    <button class="text-red-600 delete-item" data-item="'. $row->id .'" title="delete"><i class="fa-solid fa-trash-can"></i></button>
+                   
                 ';
                 return $actionBtn;
             })
             ->rawColumns(['action', 'image'])
             ->make(true);
+    }
+
+    public function itemStore(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => [
+            'required'
+        ],
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'price' => ['required', 'min:0'],
+            'description' => ['required']
+        ]);
+
+         // Create the supplier record (assuming you have a Supplier model)
+       $item = Item::create([
+            'name' => $request->input('name'),
+            'supplier_id' => $id,
+            'image' => '',
+            'price' => $request->input('price'),
+            'description' => $request->input('description')
+        ]);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Store image in 'public/images' directory and get the path
+            $image = $request->file('image');
+            $imageName = 'item-'. $id . '-' . $item->id .'.'. $image->getClientOriginalExtension();
+            
+            $imagePath = $image->storeAs('uploads', $imageName, 'public');
+        }
+
+        $item->update([
+            'image' => $imageName ?? '-'
+        ]);
+       
+
+        return redirect(route('item.list', $id));
+    }
+
+
+    public function itemEdit($id)
+    {
+        $item = Item::findOrFail($id);
+
+        return view('edit-item', compact('item'));
+    }
+
+
+    public function itemUpdate(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => [
+            'required',            
+        ],
+            'image' => ['sometimes', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'price' => ['required', 'min:0'],
+            'description' => ['required']
+        ]);
+
+       $item = Item::findOrFail($id);
+
+    
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Store image in 'public/images' directory and get the path
+            $image = $request->file('image');
+            $imageName = 'item-'. $id . '-' . $item->id .'.'. $image->getClientOriginalExtension();
+            
+            $imagePath = $image->storeAs('uploads', $imageName, 'public');
+
+        }
+        
+        $item->update([
+            'name' => $request->input('name'),
+            'price' => $request->input('price'),
+            'description' => $request->input('description'),
+            'image' => $imageName ?? $item->image
+        ]);
+        
+
+        return redirect(route('item.list', $item->supplier_id));
+    }
+
+
+    public function itemDelete($id)
+    {
+        $item = Item::findOrFail($id);
+
+        $path = storage_path('app/public/uploads/' . $item->image);
+
+        if (file_exists($path)) {
+            Storage::delete($path);
+        }
+
+        $item->delete();
+
+        return response()->json([
+            'message' => 'success',
+        ], 200);
+    }
+
+
+    public function qrUpdate()
+    {
+       $ip = gethostbyname(gethostname());
+
+       return view('qr-update', compact('ip'));
+    }
+
+
+    public function mobileUpdate(Request $request)
+    {
+        if(!$request->has('mobileId') || $request->get('mobileId') != 'ph62525') return response()->json([
+            'message' => 'Error!'
+        ], 404);
+
+        $suppliers = Supplier::all()->toJson();
+        $items = Item::all()->toJson();
+        $ip = gethostbyname(gethostname());
+
+
+        return response()->json([
+            'ip' => $ip,
+            'suppliers' => $suppliers,
+            'items' => $items
+        ], 200);
     }
 }

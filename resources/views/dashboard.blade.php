@@ -64,6 +64,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.bootstrap5.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="text/javascript">
         $(function () {
              $.ajaxSetup({
@@ -99,6 +100,41 @@
             $('.close-modal').click(() => {
                 $('#supplierModal').removeClass('flex');
                 $('#supplierModal').addClass('hidden');
+            });
+
+            $(document).on('click', '.delete-item', function() {
+                let itemId = $(this).attr('data-item');  
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: "Yes, delete it!"
+                }).then((result) => {
+                    
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: "/supplier-delete/" + itemId,  
+                            type: 'DELETE',
+                            success: function(response) {              
+                                Swal.fire({
+                                    title: "Deleted!",
+                                    text: "Supplier successfully deleted!",
+                                    icon: "success"
+                                })
+                                .then(() => {
+                                    location.reload();
+                                })
+                            },
+                            error: function(xhr, status, error) {
+                                console.error(error);
+                                alert('An error occurred while deleting the supplier.');
+                            }
+                        });
+                    }
+                });
             });
 
             var table = $('#supplier').DataTable({

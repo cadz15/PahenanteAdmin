@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Update Supplier - <em>{{ $supplier->supplier }}</em>
+            Update Item - <em>{{ $item->name }}</em>
         </h2>
     </x-slot>
 
@@ -11,7 +11,7 @@
                 @if($errors->any())
                     {{ implode('', $errors->all('<div>:message</div>')) }}
                 @endif
-                <form method="post" action="{{ route('supplier.update', $id) }}" class="bg-white py-8 px-6 shadow rounded-lg mb-0 space-y-5" enctype="multipart/form-data">
+                <form method="post" action="{{ route('items.update', $item->id) }}" class="bg-white py-8 px-6 shadow rounded-lg mb-0 space-y-5" enctype="multipart/form-data">
                     @csrf
                     <!-- <div class="space-y-5 md:flex md:space-x-2 md:space-y-0">
                         <div>
@@ -31,11 +31,26 @@
                     
                     
                     <div>
-                        <label for="supplier" class="block text-sm font-medium text-gray-700">Supplier</label>
+                        <label for="name" class="block text-sm font-medium text-gray-700">Item Name</label>
                         <div class="mt-1">
-                            <input type="text" name="supplier" id="supplier" class="appearance-none px-3 py-2 w-full border border-gray-300 rounded shadow-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500" required
-                            value="{{ old('supplier') ?? $supplier->supplier }}">
+                            <input type="text" name="name" id="name" class="appearance-none px-3 py-2 w-full border border-gray-300 rounded shadow-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500" required
+                            value="{{ old('name') ?? $item->name }}">
                         </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
+                        <input type="number" id="price" name="price" 
+                        placeholder="Price"
+                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required
+                        value="{{ old('price') ?? $item->price }}">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea type="text" id="description" name="description" 
+                        placeholder="Item Description"
+                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>{{ old('description') ?? $item->description }}</textarea>
                     </div>
                     
                     <div>
@@ -48,7 +63,7 @@
                     
                     
                     <button type="submit" class="w-full px-4 py-2 text-center bg-green-500 rounded border border-transparent shadow-sm text-white font-medium hover:bg-green-600 focus:outline-none focus:ring-1 focus:ring-green-400" >
-                        Update Supplier
+                        Update Item
                     </button>
                     
                 </form>
@@ -78,6 +93,8 @@
                     }
 
                 });
+
+
             });
         </script>
     @endsection
